@@ -8,6 +8,7 @@ import (
 
 func main() {
 	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+	// fmt.Println(dialogflow-auth.)
 
 	router := gin.Default()
 
