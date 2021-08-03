@@ -1,10 +1,14 @@
 package main
 
 import (
+	"os"
+
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+
 	router := gin.Default()
 
 	router.GET("/health-check", func(c *gin.Context) {
