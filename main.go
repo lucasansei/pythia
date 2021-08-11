@@ -20,7 +20,7 @@ func main() {
 	router.POST("/text", func(c *gin.Context) {
 		text := c.PostForm("text")
 
-		res, err := dialogflow.DetectIntentText("appcivico-teste", "123456", text, "pt-BR")
+		res, err := dialogflow.DetectIntentText("experimentation-lab-60c88", "123456", text, "pt-BR")
 		fmt.Println(res)
 		fmt.Println(err)
 
@@ -36,7 +36,7 @@ func main() {
 		filename := "./tmp-audio-folder/" + file.Filename
 
 		c.SaveUploadedFile(file, filename)
-		res, err := dialogflow.DetectIntentAudio("appcivico-teste", "123456", filename, "pt-BR")
+		res, err := dialogflow.DetectIntentAudio("experimentation-lab-60c88", "123456", filename, "pt-BR")
 		fmt.Println(err)
 
 		e := os.Remove(filename)

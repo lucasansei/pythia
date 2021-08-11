@@ -1,0 +1,21 @@
+version: "3.5"
+services:
+    api:
+        build: .
+        container_name: dialogflow_proxy_api
+        restart: unless-stopped
+        environment:
+            PORT: 8080
+            GOOGLE_APPLICATION_CREDENTIALS: '/app/key.json'
+
+        ports:
+            - 172.17.0.1:2049:8080
+        networks:
+            - external
+        logging:
+          driver: "json-file"
+          options:
+            max-file: '100'
+            max-size: 1m
+networks:
+    external:
