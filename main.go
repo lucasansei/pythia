@@ -1,15 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	dialogflow "github.com/lucasansei/pythia/dialogflow/detect_intent"
 )
 
 func main() {
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-	// fmt.Println(dialogflow-auth.)
-
 	router := gin.Default()
 
 	router.GET("/health-check", func(c *gin.Context) {
@@ -18,5 +17,37 @@ func main() {
 		})
 	})
 
-	router.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	router.POST("/text", func(c *gin.Context) {
+		text := c.PostForm("text")
+
+		res, err := dialogflow.DetectIntentText("appcivico-teste", "123456", text, "pt-BR")
+		fmt.Println(res)
+		fmt.Println(err)
+
+		c.JSON(200, gin.H{
+			"dialogflow_result": res,
+		})
+	})
+
+	router.POST("/audio", func(c *gin.Context) {
+		file, _ := c.FormFile("audio")
+		fmt.Println(file.Filename)
+
+		filename := "./tmp-audio-folder/" + file.Filename
+
+		c.SaveUploadedFile(file, filename)
+		res, err := dialogflow.DetectIntentAudio("appcivico-teste", "123456", filename, "pt-BR")
+		fmt.Println(err)
+
+		e := os.Remove(filename)
+		if e != nil {
+			fmt.Println(e)
+		}
+
+		c.JSON(200, gin.H{
+			"dialogflow_result": res,
+		})
+	})
+
+	router.Run()
 }
