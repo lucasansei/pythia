@@ -17,7 +17,7 @@ func main() {
 		})
 	})
 
-	router.POST("/text", func(c *gin.Context) {
+	router.GET("/text", func(c *gin.Context) {
 		text := c.PostForm("text")
 
 		res, err := dialogflow.DetectIntentText("experimentation-lab-60c88", "123456", text, "pt-BR")
