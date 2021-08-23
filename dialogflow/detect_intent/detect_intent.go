@@ -19,10 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
-	"os"
 
 	dialogflow "cloud.google.com/go/dialogflow/apiv2"
 	dialogflowpb "google.golang.org/genproto/googleapis/cloud/dialogflow/v2"
@@ -36,12 +33,12 @@ func DetectIntentText(projectID, sessionID, text, languageCode string) (*dialogf
 
 	sessionClient, err := dialogflow.NewSessionsClient(ctx)
 	if err != nil {
-		return &dialogflowpb.QueryResult{}, err
+		return nil, err
 	}
 	defer sessionClient.Close()
 
 	if projectID == "" || sessionID == "" {
-		return &dialogflowpb.QueryResult{}, errors.New(fmt.Sprintf("Received empty project (%s) or session (%s)", projectID, sessionID))
+		return nil, errors.New(fmt.Sprintf("Received empty project (%s) or session (%s)", projectID, sessionID))
 	}
 
 	sessionPath := fmt.Sprintf("projects/%s/agent/sessions/%s", projectID, sessionID)
@@ -55,7 +52,7 @@ func DetectIntentText(projectID, sessionID, text, languageCode string) (*dialogf
 
 	response, err := sessionClient.DetectIntent(ctx, &request)
 	if err != nil {
-		return &dialogflowpb.QueryResult{}, err
+		return nil, err
 	}
 
 	queryResult := response.GetQueryResult()
@@ -71,12 +68,12 @@ func DetectIntentAudio(projectID, sessionID, audioFile, languageCode string) (*d
 
 	sessionClient, err := dialogflow.NewSessionsClient(ctx)
 	if err != nil {
-		return &dialogflowpb.QueryResult{}, err
+		return nil, err
 	}
 	defer sessionClient.Close()
 
 	if projectID == "" || sessionID == "" {
-		return &dialogflowpb.QueryResult{}, errors.New(fmt.Sprintf("Received empty project (%s) or session (%s)", projectID, sessionID))
+		return nil, errors.New(fmt.Sprintf("Received empty project (%s) or session (%s)", projectID, sessionID))
 	}
 
 	sessionPath := fmt.Sprintf("projects/%s/agent/sessions/%s", projectID, sessionID)
@@ -88,7 +85,7 @@ func DetectIntentAudio(projectID, sessionID, audioFile, languageCode string) (*d
 
 	audioBytes, err := ioutil.ReadFile(audioFile)
 	if err != nil {
-		return &dialogflowpb.QueryResult{}, err
+		return nil, err
 	}
 
 	queryInput := dialogflowpb.QueryInput{Input: &queryAudioInput}
@@ -96,7 +93,7 @@ func DetectIntentAudio(projectID, sessionID, audioFile, languageCode string) (*d
 
 	response, err := sessionClient.DetectIntent(ctx, &request)
 	if err != nil {
-		return &dialogflowpb.QueryResult{}, err
+		return nil, err
 	}
 
 	queryResult := response.GetQueryResult()
@@ -105,89 +102,3 @@ func DetectIntentAudio(projectID, sessionID, audioFile, languageCode string) (*d
 }
 
 // [END dialogflow_detect_intent_audio]
-
-// [START dialogflow_detect_intent_streaming]
-func DetectIntentStream(projectID, sessionID, audioFile, languageCode string) (string, error) {
-	ctx := context.Background()
-
-	sessionClient, err := dialogflow.NewSessionsClient(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer sessionClient.Close()
-
-	if projectID == "" || sessionID == "" {
-		return "", errors.New(fmt.Sprintf("Received empty project (%s) or session (%s)", projectID, sessionID))
-	}
-
-	sessionPath := fmt.Sprintf("projects/%s/agent/sessions/%s", projectID, sessionID)
-
-	// In this example, we hard code the encoding and sample rate for simplicity.
-	audioConfig := dialogflowpb.InputAudioConfig{AudioEncoding: dialogflowpb.AudioEncoding_AUDIO_ENCODING_LINEAR_16, SampleRateHertz: 16000, LanguageCode: languageCode}
-
-	queryAudioInput := dialogflowpb.QueryInput_AudioConfig{AudioConfig: &audioConfig}
-
-	queryInput := dialogflowpb.QueryInput{Input: &queryAudioInput}
-
-	streamer, err := sessionClient.StreamingDetectIntent(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	f, err := os.Open(audioFile)
-	if err != nil {
-		return "", err
-	}
-
-	defer f.Close()
-
-	go func() {
-		audioBytes := make([]byte, 1024)
-
-		request := dialogflowpb.StreamingDetectIntentRequest{Session: sessionPath, QueryInput: &queryInput}
-		err = streamer.Send(&request)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		for {
-			_, err := f.Read(audioBytes)
-			if err == io.EOF {
-				streamer.CloseSend()
-				break
-			}
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			request = dialogflowpb.StreamingDetectIntentRequest{InputAudio: audioBytes}
-			err = streamer.Send(&request)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}()
-
-	var queryResult *dialogflowpb.QueryResult
-
-	for {
-		response, err := streamer.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		recognitionResult := response.GetRecognitionResult()
-		transcript := recognitionResult.GetTranscript()
-		log.Printf("Recognition transcript: %s\n", transcript)
-
-		queryResult = response.GetQueryResult()
-	}
-
-	fulfillmentText := queryResult.GetFulfillmentText()
-	return fulfillmentText, nil
-}
-
-// [END dialogflow_detect_intent_streaming]
