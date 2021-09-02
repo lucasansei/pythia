@@ -1,4 +1,4 @@
-module github.com/_/pythia
+module github.com/lucasansei/pythia
 
 go 1.16
 
