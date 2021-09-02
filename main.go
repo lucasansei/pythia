@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	dialogflow "github.com/_/pythia/dialogflow/detect_intent"
 	"github.com/gin-gonic/gin"
+	dialogflow "github.com/lucasansei/pythia/dialogflow/detect_intent"
 )
 
 func main() {

@@ -6,7 +6,6 @@ services:
           args:
             - AUTH_FOLDER_INSIDE_CONTAINER=${AUTH_FOLDER_INSIDE_CONTAINER}
             - JSON_KEY_FILENAME=${JSON_KEY_FILENAME}
-            - GOOGLE_CLOUD_PROJECT_NAME=${GOOGLE_CLOUD_PROJECT_NAME}
         container_name: dialogflow_proxy_api
         restart: unless-stopped
         environment:
