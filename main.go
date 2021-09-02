@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	dialogflow "github.com/_/pythia/dialogflow/detect_intent"
 	"github.com/gin-gonic/gin"
-	dialogflow "github.com/lucasansei/pythia/dialogflow/detect_intent"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	router.GET("/text", func(c *gin.Context) {
 		text := c.Query("text")
 
-		res, err := dialogflow.DetectIntentText("experimentation-lab-60c88", "123456", text, "pt-BR")
+		res, err := dialogflow.DetectIntentText(os.Getenv("GOOGLE_CLOUD_PROJECT_NAME"), "web_search_session", text, "pt-BR")
 		fmt.Println(res)
 		fmt.Println(err)
 
@@ -36,7 +36,7 @@ func main() {
 		filename := "./tmp-audio-folder/" + file.Filename
 
 		c.SaveUploadedFile(file, filename)
-		res, err := dialogflow.DetectIntentAudio("experimentation-lab-60c88", "123456", filename, "pt-BR")
+		res, err := dialogflow.DetectIntentAudio(os.Getenv("GOOGLE_CLOUD_PROJECT_NAME"), "web_search_session", filename, "pt-BR")
 		fmt.Println(err)
 
 		e := os.Remove(filename)
