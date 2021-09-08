@@ -1,12 +1,22 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 
+	dialogflow "github.com/_/pythia/dialogflow/detect_intent"
 	"github.com/gin-gonic/gin"
-	dialogflow "github.com/lucasansei/pythia/dialogflow/detect_intent"
 )
+
+func TempFileName(prefix, suffix string) string {
+	randBytes := make([]byte, 32)
+	rand.Read(randBytes)
+	return filepath.Join(os.TempDir(), prefix+hex.EncodeToString(randBytes)+suffix)
+}
 
 func main() {
 	router := gin.Default()
@@ -31,17 +41,35 @@ func main() {
 
 	router.POST("/audio", func(c *gin.Context) {
 		file, _ := c.FormFile("audio")
-		fmt.Println(file.Filename)
 
-		filename := "./" + file.Filename
+		tmpExt := path.Ext(file.Filename)
+		if tmpExt == "" {
+			c.JSON(400, gin.H{
+				"error": "invalid file name: missing file extension",
+			})
+			return
+		}
+
+		filename := TempFileName("audio-upload", tmpExt)
+
+		fmt.Printf("saving %s into %s\n", file.Filename, filename)
 
 		c.SaveUploadedFile(file, filename)
-		res, err := dialogflow.DetectIntentAudio(os.Getenv("GOOGLE_CLOUD_PROJECT_NAME"), "web_search_session", filename, "pt-BR")
-		fmt.Println(err)
+		defer func() {
+			e := os.Remove(filename)
+			if e != nil {
+				fmt.Printf("failed to remove %s: %s", filename, e.Error())
+			}
+		}()
 
-		e := os.Remove(filename)
-		if e != nil {
-			fmt.Println(e)
+		res, err := dialogflow.DetectIntentAudio(os.Getenv("GOOGLE_CLOUD_PROJECT_NAME"), "web_search_session", filename, "pt-BR")
+		if err != nil {
+			fmt.Printf("Failed to detect intent %s", err.Error())
+
+			c.JSON(500, gin.H{
+				"error": "failed to process request.",
+			})
+			return
 		}
 
 		c.JSON(200, gin.H{
